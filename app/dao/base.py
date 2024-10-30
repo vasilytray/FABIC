@@ -75,7 +75,7 @@ class BaseDAO(Generic[T]):
         new_instance = cls.model(**values_dict)
         session.add(new_instance)
         try:
-            await session.commit()
+            await session.flush()
             logger.info(f"Запись {cls.model.__name__} успешно добавлена.")
         except SQLAlchemyError as e:
             await session.rollback()
@@ -91,7 +91,7 @@ class BaseDAO(Generic[T]):
         new_instances = [cls.model(**values) for values in values_list]
         session.add_all(new_instances)
         try:
-            await session.commit()
+            await session.flush()
             logger.info(f"Успешно добавлено {len(new_instances)} записей.")
         except SQLAlchemyError as e:
             await session.rollback()
