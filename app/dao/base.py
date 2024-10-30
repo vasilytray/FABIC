@@ -5,8 +5,7 @@ from sqlalchemy.future import select
 from sqlalchemy import update as sqlalchemy_update, delete as sqlalchemy_delete, func
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.database import Base
+from .database import Base
 
 # Объявляем типовой параметр T с ограничением, что это наследник Base
 T = TypeVar("T", bound=Base)
@@ -113,7 +112,7 @@ class BaseDAO(Generic[T]):
         )
         try:
             result = await session.execute(query)
-            await session.commit()
+            await session.flush()
             logger.info(f"Обновлено {result.rowcount} записей.")
             return result.rowcount
         except SQLAlchemyError as e:
@@ -133,7 +132,7 @@ class BaseDAO(Generic[T]):
         query = sqlalchemy_delete(cls.model).filter_by(**filter_dict)
         try:
             result = await session.execute(query)
-            await session.commit()
+            await session.flush()
             logger.info(f"Удалено {result.rowcount} записей.")
             return result.rowcount
         except SQLAlchemyError as e:
@@ -199,14 +198,14 @@ class BaseDAO(Generic[T]):
                 # Обновляем существующую запись
                 for key, value in values_dict.items():
                     setattr(existing, key, value)
-                await session.commit()
+                await session.flush()
                 logger.info(f"Обновлена существующая запись {cls.model.__name__}")
                 return existing
             else:
                 # Создаем новую запись
                 new_instance = cls.model(**values_dict)
                 session.add(new_instance)
-                await session.commit()
+                await session.flush()
                 logger.info(f"Создана новая запись {cls.model.__name__}")
                 return new_instance
         except SQLAlchemyError as e:
@@ -234,7 +233,7 @@ class BaseDAO(Generic[T]):
                 result = await session.execute(stmt)
                 updated_count += result.rowcount
 
-            await session.commit()
+            await session.flush()
             logger.info(f"Обновлено {updated_count} записей")
             return updated_count
         except SQLAlchemyError as e:

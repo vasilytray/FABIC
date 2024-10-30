@@ -99,7 +99,7 @@
 
 ```python
 from fastapi import APIRouter
-from app.database import SessionDep
+from app.database import SessionDepWithCommit
 from app.exceptions import UserAlreadyExistsException
 from app.auth.dao import UsersDAO
 from app.auth.schemas import SUserRegister, EmailModel, SUserAddDB
@@ -109,7 +109,7 @@ router = APIRouter(prefix='/auth', tags=['Auth'])
 
 
 @router.post("/register/")
-async def register_user(user_data: SUserRegister, session: AsyncSession = SessionDep) -> dict:
+async def register_user(user_data: SUserRegister, session: AsyncSession = SessionDepWithCommit) -> dict:
     user = await UsersDAO.find_one_or_none(session=session, filters=EmailModel(email=user_data.email))
     if user:
         raise UserAlreadyExistsException

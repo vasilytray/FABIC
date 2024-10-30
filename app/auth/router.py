@@ -2,18 +2,19 @@ from typing import List
 from fastapi import APIRouter, Response, Depends
 from app.auth.dependencies import get_current_user, get_current_admin_user
 from app.auth.models import User
-from app.database import SessionDep
 from app.exceptions import UserAlreadyExistsException, IncorrectEmailOrPasswordException
 from app.auth.auth import authenticate_user, create_access_token
 from app.auth.dao import UsersDAO
 from app.auth.schemas import SUserRegister, SUserAuth, EmailModel, SUserAddDB, SUserInfo
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.dao.session_maker import TransactionSessionDep, SessionDep
+
 router = APIRouter(prefix='/auth', tags=['Auth'])
 
 
 @router.post("/register/")
-async def register_user(user_data: SUserRegister, session: AsyncSession = SessionDep) -> dict:
+async def register_user(user_data: SUserRegister, session: AsyncSession = TransactionSessionDep) -> dict:
     user = await UsersDAO.find_one_or_none(session=session, filters=EmailModel(email=user_data.email))
     if user:
         raise UserAlreadyExistsException

@@ -3,10 +3,10 @@ from jose import jwt, JWTError
 from datetime import datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
-from app.database import SessionDep
 from app.exceptions import TokenExpiredException, NoJwtException, NoUserIdException, ForbiddenException, TokenNoFound
 from app.auth.dao import UsersDAO
 from app.auth.models import User
+from app.dao.session_maker import SessionDep
 
 
 def get_token(request: Request):

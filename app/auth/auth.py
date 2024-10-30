@@ -1,4 +1,3 @@
-from fastapi import Depends
 from pydantic import EmailStr
 from jose import jwt
 from datetime import datetime, timedelta, timezone
@@ -7,7 +6,7 @@ from app.auth.schemas import EmailModel
 from app.auth.utils import verify_password
 from app.config import settings
 from app.auth.dao import UsersDAO
-from app.database import SessionDep
+from app.dao.session_maker import SessionDep
 
 
 def create_access_token(data: dict) -> str:
