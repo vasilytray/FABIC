@@ -1,4 +1,7 @@
 from typing import List
+
+from dishka import FromDishka
+from dishka.integrations.fastapi import DishkaRoute
 from fastapi import APIRouter, Response, Depends
 from app.auth.dependencies import get_current_user, get_current_admin_user
 from app.auth.models import User
@@ -8,15 +11,14 @@ from app.auth.dao import UsersDAO
 from app.auth.schemas import SUserRegister, SUserAuth, EmailModel, SUserAddDB, SUserInfo
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.dao.session_maker import TransactionSessionDep, SessionDep
 
-router = APIRouter(prefix='/auth', tags=['Auth'])
+router = APIRouter(prefix='/auth', tags=['Auth'], route_class=DishkaRoute)
 
 
 @router.post("/register/")
 async def register_user(
         user_data: SUserRegister,
-        session: AsyncSession = TransactionSessionDep
+        session: FromDishka[AsyncSession]
 ) -> dict:
     users_dao = UsersDAO(session)
 
