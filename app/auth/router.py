@@ -14,14 +14,27 @@ router = APIRouter(prefix='/auth', tags=['Auth'])
 
 
 @router.post("/register/")
-async def register_user(user_data: SUserRegister, session: AsyncSession = TransactionSessionDep) -> dict:
-    user = await UsersDAO.find_one_or_none(session=session, filters=EmailModel(email=user_data.email))
-    if user:
+async def register_user(
+        user_data: SUserRegister,
+        session: AsyncSession = TransactionSessionDep
+) -> dict:
+    users_dao = UsersDAO(session)
+
+    # Проверка существования пользователя
+    existing_user = await users_dao.find_one_or_none(
+        filters=EmailModel(email=user_data.email)
+    )
+    if existing_user:
         raise UserAlreadyExistsException
+
+    # Подготовка данных для добавления
     user_data_dict = user_data.model_dump()
-    del user_data_dict['confirm_password']
-    await UsersDAO.add(session=session, values=SUserAddDB(**user_data_dict))
-    return {'message': f'Вы успешно зарегистрированы!'}
+    user_data_dict.pop('confirm_password', None)
+
+    # Добавление пользователя
+    await users_dao.add(values=SUserAddDB(**user_data_dict))
+
+    return {'message': 'Вы успешно зарегистрированы!'}
 
 
 @router.post("/login/")
