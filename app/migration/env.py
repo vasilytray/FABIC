@@ -1,8 +1,3 @@
-import sys
-from os.path import dirname, abspath
-
-sys.path.insert(0, dirname(dirname(abspath(__file__))))
-
 import asyncio
 from logging.config import fileConfig
 from sqlalchemy import pool
