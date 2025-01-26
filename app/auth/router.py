@@ -1,9 +1,11 @@
 from typing import List
 from fastapi import APIRouter, Response, Depends
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.auth.models import User
 from app.auth.utils import authenticate_user, set_tokens
 from app.dependencies.auth_dep import get_current_user, get_current_admin_user, check_refresh_token
-from app.dependencies.dao_dep import get_users_dao
+from app.dependencies.dao_dep import get_session_with_commit, get_session_without_commit
 from app.exceptions import UserAlreadyExistsException, IncorrectEmailOrPasswordException
 from app.auth.dao import UsersDAO
 from app.auth.schemas import SUserRegister, SUserAuth, EmailModel, SUserAddDB, SUserInfo
@@ -12,9 +14,12 @@ router = APIRouter()
 
 
 @router.post("/register/")
-async def register_user(user_data: SUserRegister, users_dao: UsersDAO = Depends(get_users_dao)) -> dict:
+async def register_user(user_data: SUserRegister,
+                        session: AsyncSession = Depends(get_session_with_commit)) -> dict:
     # Проверка существования пользователя
-    existing_user = await users_dao.find_one_or_none(filters=EmailModel(email=user_data.email))
+    user_dao = UsersDAO(session)
+
+    existing_user = await user_dao.find_one_or_none(filters=EmailModel(email=user_data.email))
     if existing_user:
         raise UserAlreadyExistsException
 
@@ -23,7 +28,7 @@ async def register_user(user_data: SUserRegister, users_dao: UsersDAO = Depends(
     user_data_dict.pop('confirm_password', None)
 
     # Добавление пользователя
-    await users_dao.add(values=SUserAddDB(**user_data_dict))
+    await user_dao.add(values=SUserAddDB(**user_data_dict))
 
     return {'message': 'Вы успешно зарегистрированы!'}
 
@@ -32,8 +37,9 @@ async def register_user(user_data: SUserRegister, users_dao: UsersDAO = Depends(
 async def auth_user(
         response: Response,
         user_data: SUserAuth,
-        users_dao: UsersDAO = Depends(get_users_dao)
+        session: AsyncSession = Depends(get_session_without_commit)
 ) -> dict:
+    users_dao = UsersDAO(session)
     user = await users_dao.find_one_or_none(
         filters=EmailModel(email=user_data.email)
     )
@@ -60,10 +66,10 @@ async def get_me(user_data: User = Depends(get_current_user)) -> SUserInfo:
 
 
 @router.get("/all_users/")
-async def get_all_users(users_dao: UsersDAO = Depends(get_users_dao),
+async def get_all_users(session: AsyncSession = Depends(get_session_with_commit),
                         user_data: User = Depends(get_current_admin_user)
                         ) -> List[SUserInfo]:
-    return await users_dao.find_all()
+    return await UsersDAO(session).find_all()
 
 
 @router.post("/refresh")
