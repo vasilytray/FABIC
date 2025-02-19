@@ -19,8 +19,8 @@ def create_tokens(data: dict) -> dict:
         algorithm=settings.ALGORITHM
     )
 
-    # RefreshToken - 7 дней
-    refresh_expire = now + timedelta(days=7)
+    # RefreshToken - 1 дней
+    refresh_expire = now + timedelta(days=1)
     refresh_payload = data.copy()
     refresh_payload.update({"exp": int(refresh_expire.timestamp()), "type": "refresh"})
     refresh_token = jwt.encode(

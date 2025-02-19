@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from fastapi import Request, Depends, Response
+from fastapi import Request, Depends
 from jose import jwt, JWTError, ExpiredSignatureError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -10,7 +10,6 @@ from app.dependencies.dao_dep import get_session_without_commit
 from app.exceptions import (
     TokenNoFound, NoJwtException, TokenExpiredException, NoUserIdException, ForbiddenException, UserNotFoundException
 )
-from app.auth.utils import set_tokens  # Предполагается импорт функции set_tokens
 
 
 def get_access_token(request: Request) -> str:
@@ -30,10 +29,10 @@ def get_refresh_token(request: Request) -> str:
 
 
 async def check_refresh_token(
-        token: str,
+        token: str = Depends(get_refresh_token),
         session: AsyncSession = Depends(get_session_without_commit)
 ) -> User:
-    """Проверяем refresh_token и возвращаем пользователя."""
+    """ Проверяем refresh_token и возвращаем пользователя."""
     try:
         payload = jwt.decode(
             token,
@@ -54,38 +53,23 @@ async def check_refresh_token(
 
 
 async def get_current_user(
-        request: Request,
-        response: Response,
         token: str = Depends(get_access_token),
         session: AsyncSession = Depends(get_session_without_commit)
 ) -> User:
-    """Проверяем access_token, при истечении срока используем refresh_token для обновления."""
+    """Проверяем access_token и возвращаем пользователя."""
     try:
-        # Декодируем access токен
+        # Декодируем токен
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
     except ExpiredSignatureError:
-        # Пытаемся обновить токены через refresh
-        try:
-            refresh_token = get_refresh_token(request)
-            user = await check_refresh_token(refresh_token, session)
-            set_tokens(response, user.id)
-            return user
-        except Exception:
-            raise TokenExpiredException
+        raise TokenExpiredException
     except JWTError:
+        # Общая ошибка для токенов
         raise NoJwtException
 
-    # Проверяем срок действия access токена
     expire: str = payload.get('exp')
     expire_time = datetime.fromtimestamp(int(expire), tz=timezone.utc)
     if (not expire) or (expire_time < datetime.now(timezone.utc)):
-        try:
-            refresh_token = get_refresh_token(request)
-            user = await check_refresh_token(refresh_token, session)
-            set_tokens(response, user.id)
-            return user
-        except Exception:
-            raise TokenExpiredException
+        raise TokenExpiredException
 
     user_id: str = payload.get('sub')
     if not user_id:
@@ -98,7 +82,7 @@ async def get_current_user(
 
 
 async def get_current_admin_user(current_user: User = Depends(get_current_user)) -> User:
-    """Проверяем права администратора."""
+    """Проверяем права пользователя как администратора."""
     if current_user.role.id in [3, 4]:
         return current_user
     raise ForbiddenException

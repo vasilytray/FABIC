@@ -3,6 +3,7 @@ venv/
 .venv/
 env/
 ENV/
+data/
 
 # Игнорирование файлов с окружением
 .env
@@ -23,6 +24,7 @@ __pycache__/
 *.tmp
 *.temp
 *.swp
+db.sqlite3
 
 # Игнорирование настроек проекта для IDE
 .idea/
