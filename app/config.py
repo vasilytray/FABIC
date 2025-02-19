@@ -7,6 +7,11 @@ class Settings(BaseSettings):
     DB_URL: str = f"sqlite+aiosqlite:///{BASE_DIR}/data/db.sqlite3"
     SECRET_KEY: str
     ALGORITHM: str
+    SMTP_USER: str
+    SMTP_PASSWORD: str
+    SMTP_HOST: str
+    SMTP_PORT: int
+    TELEGRAM_BOT_TOKEN: str
 
     model_config = SettingsConfigDict(env_file=f"{BASE_DIR}/.env")
 

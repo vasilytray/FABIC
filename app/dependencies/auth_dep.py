@@ -1,8 +1,7 @@
 from datetime import datetime, timezone
-from fastapi import Request, Depends, Response
+from fastapi import Request, Depends, Response, HTTPException, status
 from jose import jwt, JWTError, ExpiredSignatureError
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.auth.dao import UsersDAO
 from app.auth.models import User
 from app.config import settings
@@ -94,6 +93,14 @@ async def get_current_user(
     user = await UsersDAO(session).find_one_or_none_by_id(data_id=int(user_id))
     if not user:
         raise UserNotFoundException
+    return user
+
+async def get_current_verified_user(user: User = Depends(get_current_user)):
+    if not user.email_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Email not verified"
+        )
     return user
 
 
